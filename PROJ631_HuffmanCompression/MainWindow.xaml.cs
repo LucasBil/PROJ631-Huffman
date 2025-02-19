@@ -73,8 +73,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             {
                 string now = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 DirectoryInfo path = System.IO.Directory.CreateDirectory($"{dialog.FolderName}/compress_{now}");
+                byte[] bytes = this.BinaryFile.Text.Select(b => (byte)(b - '0')).ToArray();
                 File.WriteAllText($"{path.FullName}/data.txt", this.FileText.Text);
-                File.WriteAllText($"{path.FullName}/data_bin.bin", this.BinaryFile.Text);
+                File.WriteAllBytes($"{path.FullName}/data_bin.bin", bytes);
                 File.WriteAllText($"{path.FullName}/data_freq.txt", this.FrequencyFile.Text);
             } catch (Exception ex) {
                 MessageBox.Show($"Error saving file : {ex.Message}", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -94,26 +95,15 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     void Compress_OnClick(object sender, RoutedEventArgs e)
     {
-        this.BinaryFile.Text = String.Empty;
-        this.FrequencyFile.Text = String.Empty;
-        Dictionary<char, int> frequency = Huffman.ParseFrequence(this.FileText.Text);
-        BNGraph<int> graph = Huffman.GenerateHuffmanGraph(frequency);
+        HuffmanEncoder encoder = new HuffmanEncoder(this.FileText.Text);
         
-        this.BinaryFile.Text += Huffman.ParseStringToBinary(graph, this.FileText.Text);
-        this.FrequencyFile.Text += $"{frequency.Keys.Count}\n";
-        foreach (char key in frequency.Keys)
-        {
-            string s = key.ToString();
-            // If escaping caracter => \ascii\ASCII
-            if (Regex.IsMatch(s, @"\s"))
-                s = "\\ascii\\" + System.Convert.ToInt32(key);
-            this.FrequencyFile.Text += @$"{s} {frequency[key]}";
-            if (frequency.Keys.ToList().IndexOf(key) != frequency.Keys.Count - 1)
-                this.FrequencyFile.Text += $"\n";
-        }
+        byte[] bytes = encoder.Encode();
+        this.BinaryFile.Text = string.Join("", bytes
+            .Select(b => b.ToString()));
+        this.FrequencyFile.Text = encoder.parseFrequenciesToTxt();
 
-        double avgByteChar = Huffman.AverageByteCompression(graph);
-        double compressRatio = Huffman.CompressRatio(this.FileText.Text,this.BinaryFile.Text)*100;
+        double avgByteChar = encoder.AverageByteCompression();
+        double compressRatio = double.Round(Huffman.CompressRatio(this.FileText.Text, bytes)*100,2);
         this.CompressBar.Value = compressRatio;
         this.InfoCompressBar.Text = $"{compressRatio}%";
         this.AverageByteText.Text = $"{avgByteChar}";
@@ -121,28 +111,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     
     void Decompress_OnClick(object sender, RoutedEventArgs e)
     {
-        Dictionary<char, int> frequency = new Dictionary<char, int>();
-        foreach (string line in this.FrequencyFile.Text.Split('\n')) {
-            if (!line.Contains(' '))
-                continue;
+        HuffmanDecoder decoder = new HuffmanDecoder(
+            Huffman.parseTxtToFrequence(this.FrequencyFile.Text)
+            );
 
-            int lastSeparator = line.LastIndexOf(' ');
-            string c = line.Substring(0, lastSeparator);
-            char character = '\0';
-            int value = int.Parse(line.Substring(lastSeparator + 1));
-
-            if (c.Contains("\\ascii\\")) {
-                c = c.Replace("\\ascii\\", "");
-                character = System.Convert.ToChar(int.Parse(c));
-            } else {
-                character = c[0];
-            }
-            
-            frequency.Add(character, value);
+        byte[] bytes = [];
+        foreach (char bit in this.BinaryFile.Text) {
+            byte _bit = (byte)(bit - '0');
+            bytes = bytes.Concat( new byte[] { _bit }).ToArray();
         }
-
-        BNGraph<int> graph = Huffman.GenerateHuffmanGraph(frequency);
-        this.FileText.Text = Huffman.ParseBinaryToString(graph, this.BinaryFile.Text);
+        this.FileText.Text = decoder.Decode(bytes);
     }
 
     void StatePlaceholder_OnTextChanged(object sender, TextChangedEventArgs e)
@@ -163,8 +141,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         dialog.FilterIndex = 1;
         bool? result = dialog.ShowDialog();
         if (result == true) {
-            try {
-                File.WriteAllText($"{dialog.FileName}_bin.bin", this.BinaryFile.Text);
+            try
+            {
+                byte[] bytes = this.BinaryFile.Text.Select(b => (byte)(b - '0')).ToArray();
+                File.WriteAllBytes($"{dialog.FileName}_bin.bin", bytes);
                 File.WriteAllText($"{dialog.FileName}_freq.txt", this.FrequencyFile.Text);
             } catch (Exception ex) {
                 MessageBox.Show($"Error saving file : {ex.Message}", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);

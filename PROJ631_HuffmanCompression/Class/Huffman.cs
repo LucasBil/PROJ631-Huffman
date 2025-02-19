@@ -1,38 +1,50 @@
 ﻿using System.Text;
+using System.Text.RegularExpressions;
 using PROJ631_HuffmanCompression.Class.Entity;
 
 namespace PROJ631_HuffmanCompression.Class;
 
-public static class Huffman
+public abstract class Huffman
 {
-    public static Dictionary<char, int> ParseFrequence(string data) {
-        Dictionary<char, int> frequency = new Dictionary<char, int>();
-        foreach (char character in data) {
-            frequency.TryAdd(character, 0);
-            frequency[character]++;
-        }
-        return frequency.OrderBy(x => x.Value)
-            .ThenBy(x => x.Key)
-            .ToDictionary(x => x.Key, x => x.Value);
+    protected BNGraph<int> huffmanGraph;
+    protected Dictionary<char, int> frequencies = new Dictionary<char, int>();
+    protected Dictionary<char, byte[]> charBytes = new Dictionary<char, byte[]>();
+
+    public BNGraph<int> HuffmanGraph
+    {
+        get => huffmanGraph;
+        set => huffmanGraph = value ?? throw new ArgumentNullException(nameof(value));
     }
 
-    public static BNGraph<int> GenerateHuffmanGraph(Dictionary<char, int> frequency)
+    public Dictionary<char, int> Frequencies
+    {
+        get => frequencies;
+        set => frequencies = value ?? throw new ArgumentNullException(nameof(value));
+    }
+
+    public Dictionary<char, byte[]> CharBytes
+    {
+        get => charBytes;
+        set => charBytes = value ?? throw new ArgumentNullException(nameof(value));
+    }
+    
+    protected BNGraph<int> GenerateHuffmanGraph()
     {
         List<BNGraph<int>> graphs = new List<BNGraph<int>>();
-        foreach (char key in frequency.Keys) {
-            Node<int> leaf = new Node<int>(key.ToString(), frequency[key]);
+        foreach (char key in this.frequencies.Keys) {
+            Node<int> leaf = new Node<int>(key.ToString(), this.frequencies[key]);
             graphs.Add(new BNGraph<int>(leaf));
         }
 
         while (graphs.Count > 1)
         {
-            graphs = graphs.OrderBy(g => g.Root.Value)
-                .ThenBy(g => g.Root.Tag)
+            graphs = graphs.OrderBy(g => g.Root?.Value)
+                .ThenBy(g => g.Root?.Tag)
                 .Reverse()
                 .ToList();
             
-            BNGraph<int> firstLessGraph = graphs[graphs.Count - 1];
-            BNGraph<int> secondLessGraph = graphs[graphs.Count - 2];
+            BNGraph<int> firstLessGraph = graphs[^1];
+            BNGraph<int> secondLessGraph = graphs[^2];
             int sum = firstLessGraph.SumLeaf() + secondLessGraph.SumLeaf();
             Node<int> root = new Node<int>(
                 $"_{sum}_",
@@ -48,47 +60,68 @@ public static class Huffman
         }
         return graphs[0];
     }
-
-    public static string ParseStringToBinary(BNGraph<int> graph, string txt)
+    
+    protected Dictionary<char, byte[]> generateByteMap()
     {
-        string binary = "";
-        foreach (char character in txt) {
-            binary += graph.BinaryPath(character.ToString());
+        Dictionary<char, byte[]> charBytes = new Dictionary<char, byte[]>();
+        foreach (char character in this.frequencies.Keys)
+        {
+            byte[] charBit = this.huffmanGraph.BinaryPath(character.ToString());
+            charBytes.Add(character, charBit);
         }
-        return binary;
+        return charBytes;
+    }
+    
+    public double AverageByteCompression()
+    {
+        int sum = 0;
+        foreach (byte[] bytes in this.charBytes.Values) {
+            sum += bytes.Count();
+        }
+        return sum / this.charBytes.Keys.Count();
     }
 
-    public static string ParseBinaryToString(BNGraph<int> graph, string binary)
+    public string parseFrequenciesToTxt()
     {
-        string txt = "";
-        Node<int> currentNode = graph.Root;
-        foreach (char bit in binary) {
-            if (bit == '0')
-                currentNode = currentNode.Left;
-            else
-                currentNode = currentNode.Right;
-
-            if (currentNode.IsLeaf()) {
-                txt += currentNode.Tag;
-                currentNode = graph.Root;
-            }
+        string txt = $"{this.frequencies.Keys.Count}\n";
+        foreach (char key in this.frequencies.Keys) {
+            string s = key.ToString();
+            if (Regex.IsMatch(s, @"\s")) // If escaping caracter => \ascii\ASCII
+                s = "\\ascii\\" + System.Convert.ToInt32(key);
+            txt += @$"{s} {this.frequencies[key]}";
+            if (this.frequencies.Keys.ToList().IndexOf(key) != this.frequencies.Keys.Count - 1)
+                txt += $"\n";
         }
         return txt;
     }
+    
+    public static Dictionary<char, int> parseTxtToFrequence(string frequencyToString) {
+        Dictionary<char, int> frequency = new Dictionary<char, int>();
+        foreach (string line in frequencyToString.Split('\n')) {
+            if (!line.Contains(' '))
+                continue;
 
-    public static double AverageByteCompression(BNGraph<int> graph)
-    {
-        List<Node<int>> nodes = graph.GetLeafs();
-        int sum = 0;
-        foreach (Node<int> node in nodes) {
-            sum += Huffman.ParseStringToBinary(graph, node.Tag).Count();
+            int lastSeparator = line.LastIndexOf(' ');
+            string c = line.Substring(0, lastSeparator);
+            char character = '\0';
+            int value = int.Parse(line.Substring(lastSeparator + 1));
+
+            if (c.Contains("\\ascii\\")) {
+                c = c.Replace("\\ascii\\", "");
+                character = System.Convert.ToChar(int.Parse(c));
+            } else {
+                character = c[0];
+            }
+            
+            frequency.Add(character, value);
         }
-        return sum / nodes.Count;
-    }
 
-    public static double CompressRatio(string txt, string binary) {
-        byte[] origine_bytes = Encoding.UTF8.GetBytes(txt);
-        byte[] compress_bytes = Encoding.UTF8.GetBytes(binary);
-        return (1 - compress_bytes.Count()) / origine_bytes.Count();
+        return frequency;
+    }
+    
+    public static double CompressRatio(string txt, byte[] binary) {
+        double byteBinary = binary.Count();
+        double byteTxt = txt.Count() * 8;
+        return 1 - (byteBinary / byteTxt);
     }
 }

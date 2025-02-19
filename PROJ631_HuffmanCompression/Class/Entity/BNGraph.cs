@@ -56,17 +56,19 @@ public class BNGraph<T> where T : IComparable<T>, IAdditionOperators<T, T, T>
         return txt;
     }
 
-    public string? BinaryPath(string value) {
+    public byte[] BinaryPath(string value) {
         if (this.Root is null || value == this.Root.Tag)
-            return string.Empty;
+            return [];
         
         BNGraph<T> leftGraph = new BNGraph<T>(this.Root.Left);
         BNGraph<T> rightGraph = new BNGraph<T>(this.Root.Right);
+
         if (leftGraph.InPath(value))
-            return $"0{leftGraph.BinaryPath(value)}";
+            return new byte[] { 0 }.Concat(leftGraph.BinaryPath(value)).ToArray();
         if (rightGraph.InPath(value))
-            return $"1{rightGraph.BinaryPath(value)}";
-        return null;
+            return new byte[] { 1 }.Concat(rightGraph.BinaryPath(value)).ToArray();
+        
+        return [];
     }
 
     public bool InPath(string value)
