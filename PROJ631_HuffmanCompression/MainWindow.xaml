@@ -1,0 +1,175 @@
+﻿<Window x:Class="PROJ631_HuffmanCompression.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:fa="http://schemas.fontawesome.io/icons/"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PROJ631_HuffmanCompression"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="500" Width="400">
+    <Window.CommandBindings>
+        <CommandBinding Command="New" Executed="NewFile_Command"/>
+        <CommandBinding Command="Open" Executed="OpenFile_Command"/>
+        <CommandBinding Command="Save" Executed="SaveFiles_Command"/>
+        <CommandBinding Command="Close" Executed="Exit_Command"/>
+        <CommandBinding Command="local:MainWindow.Compress" Executed="Compress_OnClick"/>
+        <CommandBinding Command="local:MainWindow.Decompress" Executed="Decompress_OnClick"/>
+    </Window.CommandBindings>
+    <Window.InputBindings>
+        <KeyBinding Key="E" Modifiers="Control" Command="Close"/>
+    </Window.InputBindings>
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="File">
+                <MenuItem Header="_New" Command="New" InputGestureText="Ctrl+N"/>
+                <MenuItem Header="_Open" Command="Open" InputGestureText="Ctrl+O"/>
+                <MenuItem Header="_Save" Command="Save" InputGestureText="Ctrl+S"/>
+                <Separator/>
+                <MenuItem Header="_Exit" Command="Close" InputGestureText="Ctrl+E"/>
+            </MenuItem>
+            <MenuItem Header="Action">
+                <MenuItem Header="_Compress" Command="local:MainWindow.Compress" InputGestureText="Alt+C"/>
+                <MenuItem Header="_Decompress" Command="local:MainWindow.Decompress" InputGestureText="Alt+D"/>
+            </MenuItem>
+        </Menu>
+        <Grid Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="2*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            
+            <!-- Grid Parameters -->
+            <GroupBox Grid.Row="0" Header="Origine">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" x:Name="FileText"
+                             AcceptsReturn="True"
+                             AcceptsTab="True"
+                             VerticalScrollBarVisibility="Visible"
+                             TextWrapping="Wrap"
+                             TextChanged="StatePlaceholder_OnTextChanged"/>
+                    <Label Grid.Column="0" x:Name="Placeholder_FileText"
+                           Content="Uncompress File" 
+                           Background="Transparent"
+                           Opacity="0.5" 
+                           IsHitTestVisible="False"/>
+                    <Button Grid.Column="1" 
+                            fa:Awesome.Content="FloppyOutline"
+                            TextElement.FontFamily="pack://application:,,,/FontAwesome.WPF;component/#FontAwesome"
+                            Click="SaveOrigineFile_OnClick"/>
+                </Grid>
+            </GroupBox>
+            
+            <GridSplitter Grid.Row="1"
+                          Height="2"
+                          Margin="1 5 1 0"
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Stretch"
+                          ResizeBehavior="PreviousAndNext"/>
+            
+            <!-- Grid Result -->
+            <GroupBox Grid.Row="2" Header="Compress">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid Grid.Column="0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <GroupBox Grid.Column="0" Grid.Row="0" Header="Binary File">
+                            <Grid>
+                                <TextBox x:Name="BinaryFile"
+                                         AcceptsReturn="True"
+                                         AcceptsTab="True"
+                                         VerticalScrollBarVisibility="Visible"
+                                         TextWrapping="Wrap"
+                                         TextChanged="StatePlaceholder_OnTextChanged"/>
+                                <Label x:Name="Placeholder_BinaryFile"
+                                       Content="Binary File" 
+                                       Background="Transparent"
+                                       Opacity="0.5" 
+                                       IsHitTestVisible="False"/>
+                            </Grid>
+                        </GroupBox>
+                        <GridSplitter Grid.Row="1"
+                                      Height="2"
+                                      Margin="5 1 5 1"
+                                      HorizontalAlignment="Stretch"
+                                      VerticalAlignment="Stretch"
+                                      ResizeBehavior="PreviousAndNext" />
+                        <GroupBox Grid.Row="2" Header="Frequency File">
+                            <Grid>
+                                <TextBox Grid.Row="2" x:Name="FrequencyFile"
+                                         AcceptsReturn="True"
+                                         AcceptsTab="True"
+                                         VerticalScrollBarVisibility="Visible"
+                                         TextWrapping="Wrap"
+                                         TextChanged="StatePlaceholder_OnTextChanged"/>
+                                <Label Grid.Row="2" x:Name="Placeholder_FrequencyFile"
+                                       Content="Frequency File" 
+                                       Background="Transparent"
+                                       Opacity="0.5" 
+                                       IsHitTestVisible="False"/>
+                            </Grid>
+                        </GroupBox>
+                    </Grid>
+                    <Button Grid.Column="1" 
+                            fa:Awesome.Content="FloppyOutline"
+                            TextElement.FontFamily="pack://application:,,,/FontAwesome.WPF;component/#FontAwesome"
+                            Click="SaveCompressFiles_OnClick"/>
+                </Grid>
+            </GroupBox>
+            
+            <!-- Grid Analyse -->
+            <GroupBox Grid.Row="3" Header="Stats">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <Grid Grid.Column="0">
+                        <ProgressBar Grid.Column="0" x:Name="CompressBar"
+                                   Margin="5"
+                                   Minimum="0"
+                                   Maximum="100"/>
+                        <TextBlock x:Name="InfoCompressBar" 
+                                   TextAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    </Grid>
+                    <StackPanel Grid.Column="1"
+                                Margin="5"
+                                Orientation="Horizontal">
+                        <TextBlock Text="Average Byte :"/>
+                        <TextBlock x:Name="AverageByteText"
+                                   Margin="5 0 0 0"/>
+                    </StackPanel>
+                </Grid>
+            </GroupBox>
+            
+            <!-- Button Action -->
+            <Grid Grid.Row="4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0"
+                        Margin="2"
+                        Click="Compress_OnClick">Compress</Button>
+                <Button Grid.Column="1"
+                        Margin="2"
+                        Click="Decompress_OnClick">Decompress</Button>
+            </Grid>
+        </Grid>
+    </DockPanel>
+</Window>
