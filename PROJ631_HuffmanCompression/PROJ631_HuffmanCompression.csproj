@@ -9,7 +9,15 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="AutomaticGraphLayout" Version="1.1.12" />
+      <PackageReference Include="AutomaticGraphLayout.Drawing" Version="1.1.12" />
+      <PackageReference Include="AutomaticGraphLayout.GraphViewerGDI" Version="1.1.12" />
+      <PackageReference Include="AutomaticGraphLayout.WpfGraphControl" Version="1.1.12" />
       <PackageReference Include="FontAwesome.WPF" Version="4.7.0.9" />
+      <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
     </ItemGroup>
 
 </Project>
