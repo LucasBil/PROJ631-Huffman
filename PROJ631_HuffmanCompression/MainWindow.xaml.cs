@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using System.IO;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -56,11 +57,23 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         var dialog = new Microsoft.Win32.OpenFileDialog();
         dialog.Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*";
         bool? result = dialog.ShowDialog();
+        string txt;
         if (result == true) {
-            using (StreamReader reader = new StreamReader(dialog.FileName))
-            {
-                textBox.Text = reader.ReadToEnd();
+            if (dialog.FileName.EndsWith(".bin")) {
+                StringBuilder binaryString = new StringBuilder();
+                byte[] fileBytes = File.ReadAllBytes(dialog.FileName);
+                foreach (byte b in fileBytes)
+                {
+                    binaryString.Append(Convert.ToString(b, 2).PadLeft(8, '0'));
+                }
+                txt = binaryString.ToString();
+            } else {
+                using (StreamReader reader = new StreamReader(dialog.FileName))
+                {
+                    txt = reader.ReadToEnd();
+                }
             }
+            textBox.Text = txt;
         }
     }
     
@@ -73,7 +86,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             {
                 string now = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 DirectoryInfo path = System.IO.Directory.CreateDirectory($"{dialog.FolderName}/compress_{now}");
-                byte[] bytes = this.BinaryFile.Text.Select(b => (byte)(b - '0')).ToArray();
+                byte[] bytes = this.BinaryFile.Text
+                    .Chunk(8)
+                    .Select(chunk =>  Convert.ToByte(new string(chunk), 2))
+                    .ToArray();
                 File.WriteAllText($"{path.FullName}/data.txt", this.FileText.Text);
                 File.WriteAllBytes($"{path.FullName}/data_bin.bin", bytes);
                 File.WriteAllText($"{path.FullName}/data_freq.txt", this.FrequencyFile.Text);
@@ -143,7 +159,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (result == true) {
             try
             {
-                byte[] bytes = this.BinaryFile.Text.Select(b => (byte)(b - '0')).ToArray();
+                byte[] bytes = this.BinaryFile.Text
+                    .Chunk(8)
+                    .Select(chunk =>  Convert.ToByte(new string(chunk), 2))
+                    .ToArray();
                 File.WriteAllBytes($"{dialog.FileName}_bin.bin", bytes);
                 File.WriteAllText($"{dialog.FileName}_freq.txt", this.FrequencyFile.Text);
             } catch (Exception ex) {

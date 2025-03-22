@@ -6,7 +6,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PROJ631_HuffmanCompression"
         mc:Ignorable="d"
-        Title="MainWindow" Height="500" Width="400">
+        Title="Huffman Compression" Height="500" Width="400">
     <Window.CommandBindings>
         <CommandBinding Command="New" Executed="NewFile_Command"/>
         <CommandBinding Command="Open" Executed="OpenFile_Command"/>
